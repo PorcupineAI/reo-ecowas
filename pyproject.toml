@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "reo-ecowas"
+version = "1.0.0"
+description = "Regional Energy Orchestration Platform for ECOWAS"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [{name = "Your Name", email = "you@example.com"}]
+
+[project.scripts]
+reo-init = "scripts.init_db:init_database"
+reo-seed = "scripts.load_geodata:seed_sites"
