@@ -1,0 +1,54 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.Python
+env/
+venv/
+.venv/
+dist/
+build/
+*.egg-info/
+.eggs/
+*.log
+
+# Environment & Secrets
+.env
+.env.local
+.env.*.local
+.secrets
+*.key
+*.pem
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Data (large geospatial files)
+data/raw/*.tif
+data/raw/*.shp
+data/raw/*.geojson
+data/processed/*.tif
+*.gdb/
+*.gpkg
+
+# Frontend
+.streamlit/secrets.toml
+*.pyc
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Docker
+*.pid
+*.sock
+
+# Misc
+*.tmp
+*.bak
+*.dump
