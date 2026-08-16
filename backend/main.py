@@ -1,47 +1,65 @@
+import logging
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from contextlib import asynccontextmanager
+from backend.config import settings
+from backend.scheduler.tasks import start_scheduler
+from backend.api.routes import (
+    sites,
+    optimization,
+    reports,
+    regulatory,
+    gender,
+)
 
-from config import settings
-from database import engine, Base
-from api.routes import sites, optimization, reports, regulatory
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-# Create tables
-Base.metadata.create_all(bind=engine)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: Initialize scheduler
-    from scheduler.tasks import start_scheduler
+    logger.info("🚀 Starting REO-ECOWAS...")
+    # Schema managed by Alembic – no create_all()
     start_scheduler()
+    logger.info("✅ Scheduler started.")
     yield
-    # Shutdown: Clean up
+    logger.info("🛑 Shutting down...")
+
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
-    lifespan=lifespan
+    lifespan=lifespan,
+    docs_url="/docs",
+    redoc_url="/redoc",
 )
 
-# CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # TODO: Restrict in production
+    allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Routes
-app.include_router(sites.router, prefix=settings.API_V1_PREFIX)
-app.include_router(optimization.router, prefix=settings.API_V1_PREFIX)
-app.include_router(reports.router, prefix=settings.API_V1_PREFIX)
-app.include_router(regulatory.router, prefix=settings.API_V1_PREFIX)
+api_prefix = settings.API_V1_PREFIX
+app.include_router(sites.router, prefix=api_prefix, tags=["sites"])
+app.include_router(optimization.router, prefix=api_prefix, tags=["optimization"])
+app.include_router(reports.router, prefix=api_prefix, tags=["reports"])
+app.include_router(regulatory.router, prefix=api_prefix, tags=["regulatory"])
+app.include_router(gender.router, prefix=api_prefix, tags=["gender"])
 
-@app.get("/")
-def root():
-    return {"message": "REO-ECOWAS API", "version": settings.VERSION}
 
 @app.get("/health")
-def health():
-    return {"status": "healthy"}
+async def health():
+    return {"status": "healthy", "service": settings.PROJECT_NAME}
+
+
+@app.get("/")
+async def root():
+    return {"service": settings.PROJECT_NAME, "version": settings.VERSION, "docs": "/docs"}
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("backend.main:app", host="0.0.0.0", port=8000, reload=settings.DEBUG)
