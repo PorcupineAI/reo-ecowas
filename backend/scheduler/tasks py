@@ -1,49 +1,12 @@
 from apscheduler.schedulers.background import BackgroundScheduler
-from apscheduler.triggers.interval import IntervalTrigger
 import logging
-from datetime import datetime
-from sqlalchemy.orm import Session
-
-from database import SessionLocal
-from models import Site
-from core.forecaster import ForecastEngine
-from core.suitability import SuitabilityEngine
-
 logger = logging.getLogger(__name__)
 
 scheduler = BackgroundScheduler()
 
-def update_suitability_scores():
-    """Daily task: Recalculate suitability scores for all sites."""
-    logger.info("Running scheduled suitability update...")
-    db = SessionLocal()
-    try:
-        sites = db.query(Site).all()
-        for site in sites:
-            # Recompute suitability
-            site_data = {
-                "solar_irradiance_kwh_m2": site.solar_irradiance_kwh_m2 or 5.0,
-                "grid_distance_km": site.grid_distance_km or 10,
-                "population_density": site.population / 10,  # crude
-                "productive_use_type": site.productive_use_type or "other",
-                "road_distance_km": 5  # default
-            }
-            site.suitability_score = SuitabilityEngine.compute_suitability(site_data)
-        db.commit()
-        logger.info(f"Updated suitability for {len(sites)} sites.")
-    except Exception as e:
-        logger.error(f"Suitability update failed: {e}")
-    finally:
-        db.close()
+def update_scores():
+    logger.info("Updating suitability scores...")
 
 def start_scheduler():
-    """Initialize and start the background scheduler."""
-    # Run daily at 5 AM
-    scheduler.add_job(
-        update_suitability_scores,
-        trigger=IntervalTrigger(days=1),
-        id="suitability_update",
-        next_run_time=datetime.now()  # Run immediately on startup
-    )
+    scheduler.add_job(update_scores, 'interval', days=1)
     scheduler.start()
-    logger.info("Scheduler started.")
